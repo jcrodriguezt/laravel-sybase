@@ -46,7 +46,8 @@ class Connection extends IlluminateConnection
      *
      * @throws \Exception
      */
-    public function transaction(Closure $callback, $attempts = 1) {
+    public function transaction(Closure $callback, $attempts = 1)
+    {
         if ($this->getDriverName() === 'sqlsrv') {
             return parent::transaction($callback);
         }
@@ -62,9 +63,9 @@ class Connection extends IlluminateConnection
             $this->pdo->exec('COMMIT TRAN');
         }
 
-        // If we catch an exception, we will roll back so nothing gets messed
-        // up in the database. Then we'll re-throw the exception so it can
-        // be handled how the developer sees fit for their applications.
+            // If we catch an exception, we will roll back so nothing gets messed
+            // up in the database. Then we'll re-throw the exception so it can
+            // be handled how the developer sees fit for their applications.
         catch (Exception $e) {
             $this->pdo->exec('ROLLBACK TRAN');
 
@@ -79,7 +80,8 @@ class Connection extends IlluminateConnection
      *
      * @return \Uepg\LaravelSybase\Database\Query\Grammar
      */
-    protected function getDefaultQueryGrammar() {
+    protected function getDefaultQueryGrammar()
+    {
         return $this->withTablePrefix(new QueryGrammar);
     }
 
@@ -88,7 +90,8 @@ class Connection extends IlluminateConnection
      *
      * @return \Uepg\LaravelSybase\Database\Schema\Grammar
      */
-    protected function getDefaultSchemaGrammar() {
+    protected function getDefaultSchemaGrammar()
+    {
         return $this->withTablePrefix(new SchemaGrammar);
     }
 
@@ -97,7 +100,8 @@ class Connection extends IlluminateConnection
      *
      * @return \Uepg\LaravelSybase\Database\Query\Processor
      */
-    protected function getDefaultPostProcessor() {
+    protected function getDefaultPostProcessor()
+    {
         return new Processor;
     }
 
@@ -106,17 +110,19 @@ class Connection extends IlluminateConnection
      *
      * @return \Doctrine\DBAL\Driver\PDOSqlsrv\Driver
      */
-    protected function getDoctrineDriver() {
+    protected function getDoctrineDriver()
+    {
         return new DoctrineDriver;
     }
 
     /**
-     * Compile the bindings for select/update/delete.
+     * Compile the bindings for select/insert/update/delete.
      *
      * @param  \Illuminate\Database\Query\Builder  $builder
      * @return array
      */
-    private function compile(Builder $builder) {
+    private function compile(Builder $builder)
+    {
         $arrTables = [];
 
         array_push($arrTables, $builder->from);
@@ -125,7 +131,6 @@ class Connection extends IlluminateConnection
                 array_push($arrTables, $join->table);
             }
         }
-
 
         $wheres = [];
 
@@ -141,9 +146,9 @@ class Connection extends IlluminateConnection
         }
 
         foreach ($arrTables as $tables) {
-            preg_match(
+            preg_match (
                 "/(?:(?'table'.*)(?: as )(?'alias'.*))|(?'tables'.*)/",
-                $tables,
+                strtolower($tables),
                 $alias
             );
 
@@ -153,7 +158,8 @@ class Connection extends IlluminateConnection
                 $tables = $alias['table'];
             }
 
-            $queryString = $this->queryStringForSelect($tables);
+
+            $queryString = $this->queryString($tables);
             $queryRes = $this->getPdo()->query($queryString);
 
             $aux = $queryRes->fetchAll(PDO::FETCH_NAMED);
@@ -163,37 +169,45 @@ class Connection extends IlluminateConnection
 
                 if (! empty($alias['alias'])) {
                     $types[
-                        strtolower($alias['alias'].'.'.$row['name'])
+                    strtolower($alias['alias'].'.'.$row['name'])
                     ] = $row['type'];
                 }
             }
         }
 
         $convert = function($column, $v) use($types) {
-            if(is_null($v)) return null;
+            if (is_null($v)) return null;
 
             $variable_type = $types[strtolower($column)];
 
-            if(in_array($variable_type, $this->withoutQuotes)) {
+            if (in_array($variable_type, $this->withoutQuotes)) {
                 return $v / 1;
             } else {
-                return null;
+                return (string) $v;
             }
         };
 
         $keys = [];
 
-        if(isset($builder->set)) {
+        if (isset($builder->values)) {
+            foreach ($builder->values as $value) {
+                foreach ($value as $k => $v) {
+                    $keys[] = $convert($k, $v);
+                }
+            }
+        }
+
+        if (isset($builder->set)) {
             foreach ($builder->set as $k => $v) {
                 $keys[] = $convert($k, $v);
             }
         }
 
-        foreach($wheres as $w) {
-            if($w['type'] == 'Basic') {
+        foreach ($wheres as $w) {
+            if ($w['type'] == 'Basic') {
                 $keys[] = $convert($w['column'], $w['value']);
-            } elseif($w['type'] == 'In' || $w['type'] == 'NotIn') {
-                foreach($w['values'] as $v) {
+            } elseif ($w['type'] == 'In' || $w['type'] == 'NotIn') {
+                foreach ($w['values'] as $v) {
                     $keys[] = $convert($w['column'], $v);
                 }
             }
@@ -203,12 +217,13 @@ class Connection extends IlluminateConnection
     }
 
     /**
-     * Query string for select.
+     * Query string.
      *
      * @param  string  $tables
      * @return string
      */
-    private function queryStringForSelect($tables) {
+    private function queryString($tables)
+    {
         $explicitDB = explode('..', $tables);
 
         if (isset($explicitDB[1])) {
@@ -271,7 +286,8 @@ class Connection extends IlluminateConnection
      * @param  array  $bindings
      * @return mixed  $newBinds
      */
-    private function compileBindings($query, $bindings) {
+    private function compileBindings($query, $bindings)
+    {
         if (count($bindings) == 0) {
             return [];
         }
@@ -279,7 +295,7 @@ class Connection extends IlluminateConnection
         $bindings = $this->prepareBindings($bindings);
         $builder = $this->queryGrammar->getBuilder();
 
-        if ($builder != null && $builder->wheres != null) {
+        if ($builder != null) {
             return $this->compile($builder);
         } else {
             return $bindings;
@@ -292,7 +308,8 @@ class Connection extends IlluminateConnection
      * @param  string  $table
      * @return string
      */
-    private function queryStringForCompileBindings($table) {
+    private function queryStringForCompileBindings($table)
+    {
         $explicitDB = explode('..', $table);
 
         if (isset($explicitDB[1])) {
@@ -356,12 +373,13 @@ class Connection extends IlluminateConnection
      * PDO::PARAM_STR, which would put quotes.
      *
      * @link http://stackoverflow.com/questions/2718628/pdoparam-for-type-decimal
-     * 
+     *
      * @param  string  $query
      * @param  array  $bindings
      * @return string $query
      */
-    private function compileNewQuery($query, $bindings) {
+    private function compileNewQuery($query, $bindings)
+    {
         $newQuery = '';
 
         $bindings = $this->compileBindings($query, $bindings);
@@ -400,7 +418,8 @@ class Connection extends IlluminateConnection
      * @param  \Uepg\LaravelSybase\Database\Connection  $me
      * @return string
      */
-    public function compileOffset($offset, $query, $bindings = [], $me) {
+    public function compileOffset($offset, $query, $bindings = [], $me)
+    {
         $limit = $this->queryGrammar->getBuilder()->limit;
 
         $from = explode(' ', $this->queryGrammar->getBuilder()->from)[0];
@@ -479,7 +498,8 @@ class Connection extends IlluminateConnection
      * @param  string  $from
      * @return string
      */
-    private function queryStringForIdentity($from) {
+    private function queryStringForIdentity($from)
+    {
         $explicitDB = explode('..', $from);
 
         if (isset($explicitDB[1])) {
@@ -513,7 +533,8 @@ class Connection extends IlluminateConnection
      * @param  string  $from
      * @return string
      */
-    private function queryStringForPrimaries($from) {
+    private function queryStringForPrimaries($from)
+    {
         $explicitDB = explode('..', $from);
 
         if (isset($explicitDB[1])) {
@@ -557,7 +578,8 @@ class Connection extends IlluminateConnection
      * @param  bool  $useReadPdo
      * @return array
      */
-    public function select($query, $bindings = [], $useReadPdo = true) {
+    public function select($query, $bindings = [], $useReadPdo = true)
+    {
         return $this->run($query, $bindings, function (
             $query,
             $bindings
@@ -595,10 +617,11 @@ class Connection extends IlluminateConnection
      * Get the statement.
      *
      * @param  string  $query
-     * @param  mixed|array  $bindings
+     * @param  mixed|array   $bindings
      * @return bool
      */
-    public function statement($query, $bindings = []) {
+    public function statement($query, $bindings = [])
+    {
         return $this->run($query, $bindings, function ($query, $bindings) {
             if ($this->pretending()) {
                 return true;
@@ -618,7 +641,8 @@ class Connection extends IlluminateConnection
      * @param  array  $bindings
      * @return int
      */
-    public function affectingStatement($query, $bindings = []) {
+    public function affectingStatement($query, $bindings = [])
+    {
         return $this->run($query, $bindings, function ($query, $bindings) {
             if ($this->pretending()) {
                 return 0;
@@ -636,7 +660,8 @@ class Connection extends IlluminateConnection
      *
      * @return int
      */
-    public function getFetchMode() {
+    public function getFetchMode()
+    {
         return $this->fetchMode;
     }
 
@@ -645,7 +670,8 @@ class Connection extends IlluminateConnection
      *
      * @return \Illuminate\Database\Query\Builder
      */
-    public function getSchemaBuilder() {
+    public function getSchemaBuilder()
+    {
         if (is_null($this->schemaGrammar)) {
             $this->useDefaultSchemaGrammar();
         }
