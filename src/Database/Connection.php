@@ -668,7 +668,7 @@ class Connection extends IlluminateConnection
     /**
      * Get SchemaBuilder.
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return \Illuminate\Database\Schema\Builder
      */
     public function getSchemaBuilder()
     {
@@ -676,7 +676,7 @@ class Connection extends IlluminateConnection
             $this->useDefaultSchemaGrammar();
         }
 
-        $builder = new Builder($this);
+        $builder = new \Illuminate\Database\Schema\Builder($this);
 
         $builder->blueprintResolver(function ($table, $callback) {
             return new Blueprint($table, $callback);
