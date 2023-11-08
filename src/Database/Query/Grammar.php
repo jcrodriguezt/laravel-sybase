@@ -134,6 +134,27 @@ class Grammar extends IlluminateGrammar
     }
 
     /**
+     * Compile a delete statement into SQL.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return string
+     */
+    public function compileDelete(Builder $query)
+    {
+        $this->builder = $query;
+        
+        $table = $this->wrapTable($query->from);
+
+        $where = $this->compileWheres($query);
+
+        return trim(
+            isset($query->joins)
+                ? $this->compileDeleteWithJoins($query, $table, $where)
+                : $this->compileDeleteWithoutJoins($query, $table, $where)
+        );
+    }
+
+    /**
      * Compile the "select *" portion of the query.
      *
      * @param  \Illuminate\Database\Query\Builder  $query
