@@ -205,10 +205,14 @@ class Connection extends IlluminateConnection
 
         foreach ($wheres as $w) {
             if ($w['type'] == 'Basic') {
-                $keys[] = $convert($w['column'], $w['value']);
+                if (gettype($w['value']) != 'object') {
+                    $keys[] = $convert($w['column'], $w['value']);
+                }
             } elseif ($w['type'] == 'In' || $w['type'] == 'NotIn') {
                 foreach ($w['values'] as $v) {
-                    $keys[] = $convert($w['column'], $v);
+                    if (gettype($v) != 'object') {
+                        $keys[] = $convert($w['column'], $v);
+                    }
                 }
             }
         }
