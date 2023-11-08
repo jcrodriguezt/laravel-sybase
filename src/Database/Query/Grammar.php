@@ -142,7 +142,7 @@ class Grammar extends IlluminateGrammar
     public function compileDelete(Builder $query)
     {
         $this->builder = $query;
-        
+
         $table = $this->wrapTable($query->from);
 
         $where = $this->compileWheres($query);
