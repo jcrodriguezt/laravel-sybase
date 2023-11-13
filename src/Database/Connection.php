@@ -49,7 +49,7 @@ class Connection extends IlluminateConnection
      */
     public function transaction(Closure $callback, $attempts = 1)
     {
-        if ($this->getDriverName() === 'sqlsrv') {
+        if ($this->getDriverName() === 'sybasease') {
             return parent::transaction($callback);
         }
 
