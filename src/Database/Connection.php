@@ -194,7 +194,6 @@ class Connection extends IlluminateConnection
             foreach ($builder->values as $key => $value) {
                 if(gettype($value) == 'array') {
                     foreach ($value as $k => $v) {
-                        dd($k, $v);
                         $keys[] = $convert($k, $v);
                     }
                 } else {
