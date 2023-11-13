@@ -191,9 +191,14 @@ class Connection extends IlluminateConnection
         $keys = [];
 
         if (isset($builder->values)) {
-            foreach ($builder->values as $value) {
-                foreach ($value as $k => $v) {
-                    $keys[] = $convert($k, $v);
+            foreach ($builder->values as $key => $value) {
+                if(gettype($value) == 'array') {
+                    foreach ($value as $k => $v) {
+                        dd($k, $v);
+                        $keys[] = $convert($k, $v);
+                    }
+                } else {
+                    $keys[] = $convert($key, $value);
                 }
             }
         }
