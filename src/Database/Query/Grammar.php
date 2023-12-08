@@ -99,10 +99,10 @@ class Grammar extends IlluminateGrammar
         // to the query. Each insert should have the exact same number of parameter
         // bindings so we will loop through the record and parameterize them all.
         $parameters = collect($values)->map(function ($record) {
-            return '('.$this->parameterize($record).')';
-        })->implode(', ');
+            return 'SELECT '.$this->parameterize($record);
+        })->implode(' UNION ALL ');
 
-        return "insert into $table ($columns) values $parameters";
+        return "insert into $table ($columns) $parameters";
     }
 
     /**
