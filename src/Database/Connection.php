@@ -184,7 +184,11 @@ class Connection extends IlluminateConnection
             if (in_array($variable_type, $this->withoutQuotes)) {
                 return $v / 1;
             } else {
-                return (string) $v;
+                if(env('DB_CHARSET') && env('APPLICATION_CHARSET')) {
+                    return mb_convert_encoding((string) $v, env('DB_CHARSET'), env('APPLICATION_CHARSET'));
+                } else {
+                    return (string) $v;
+                }
             }
         };
 
@@ -616,6 +620,14 @@ class Connection extends IlluminateConnection
                 do {
                     $result += $statement->fetchAll($this->getFetchMode());
                 } while ($statement->nextRowset());
+
+                if(env('DB_CHARSET') && env('APPLICATION_CHARSET')) {
+                    foreach ($result as $row) {
+                        foreach ($row as $name => $col) {
+                            $row->$name = mb_convert_encoding($col, env('APPLICATION_CHARSET'), env('DB_CHARSET'));
+                        }
+                    }
+                }
 
                 return $result;
             }
